@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
@@ -17,8 +17,33 @@ const DIFFICULTY_CONFIG = {
 
 const MAX_LEVEL = 5;
 const DEFAULT_PAGE_SIZE = 10;
+const MAX_NAME_LENGTH = 10;
 
 let leaderboard = [];
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') {
+    str = String(str);
+  }
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizePlayerName(name) {
+  if (typeof name !== 'string') {
+    return '匿名玩家';
+  }
+  let sanitized = name.trim();
+  if (sanitized.length === 0) {
+    return '匿名玩家';
+  }
+  sanitized = sanitized.substring(0, MAX_NAME_LENGTH);
+  return sanitized;
+}
 
 function shuffle(array) {
   const arr = [...array];
@@ -58,13 +83,17 @@ app.post('/api/score', (req, res) => {
     return res.status(400).json({ error: '无效的成绩数据' });
   }
 
+  const safePlayerName = sanitizePlayerName(playerName);
+  const safeDifficulty = DIFFICULTY_CONFIG[difficulty] ? difficulty : 'medium';
+  const safeLevel = Math.min(Math.max(parseInt(level) || 1, 1), MAX_LEVEL);
+
   const entry = {
     id: Date.now() + Math.random(),
     time: time,
-    playerName: playerName || '匿名玩家',
-    difficulty: difficulty,
-    level: parseInt(level) || 1,
-    moves: parseInt(moves) || 0,
+    playerName: safePlayerName,
+    difficulty: safeDifficulty,
+    level: safeLevel,
+    moves: Math.max(parseInt(moves) || 0, 0),
     date: new Date().toISOString(),
     dateStr: new Date().toLocaleString('zh-CN')
   };
@@ -72,7 +101,7 @@ app.post('/api/score', (req, res) => {
   leaderboard.push(entry);
 
   const sameDifficultyLevel = leaderboard.filter(
-    e => e.difficulty === difficulty && e.level === parseInt(level)
+    e => e.difficulty === safeDifficulty && e.level === safeLevel
   );
   sameDifficultyLevel.sort((a, b) => a.time - b.time);
   const rank = sameDifficultyLevel.findIndex(e => e.id === entry.id) + 1;
@@ -97,16 +126,18 @@ app.get('/api/leaderboard', (req, res) => {
 
   let filtered = [...leaderboard];
 
-  if (difficulty !== 'all') {
+  if (difficulty !== 'all' && DIFFICULTY_CONFIG[difficulty]) {
     filtered = filtered.filter(e => e.difficulty === difficulty);
   }
 
   if (level !== 'all') {
     const levelNum = parseInt(level);
-    filtered = filtered.filter(e => e.level === levelNum);
+    if (!isNaN(levelNum) && levelNum >= 1 && levelNum <= MAX_LEVEL) {
+      filtered = filtered.filter(e => e.level === levelNum);
+    }
   }
 
-  if (search) {
+  if (search && typeof search === 'string') {
     const searchLower = search.toLowerCase();
     filtered = filtered.filter(e => 
       e.playerName.toLowerCase().includes(searchLower)
@@ -115,20 +146,24 @@ app.get('/api/leaderboard', (req, res) => {
 
   if (dateFrom) {
     const fromDate = new Date(dateFrom);
-    filtered = filtered.filter(e => new Date(e.date) >= fromDate);
+    if (!isNaN(fromDate.getTime())) {
+      filtered = filtered.filter(e => new Date(e.date) >= fromDate);
+    }
   }
 
   if (dateTo) {
     const toDate = new Date(dateTo);
-    toDate.setHours(23, 59, 59, 999);
-    filtered = filtered.filter(e => new Date(e.date) <= toDate);
+    if (!isNaN(toDate.getTime())) {
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(e => new Date(e.date) <= toDate);
+    }
   }
 
   filtered.sort((a, b) => a.time - b.time);
 
   const total = filtered.length;
-  const pageNum = parseInt(page);
-  const size = parseInt(pageSize);
+  const pageNum = Math.max(parseInt(page) || 1, 1);
+  const size = Math.min(Math.max(parseInt(pageSize) || DEFAULT_PAGE_SIZE, 1), 100);
   const totalPages = Math.ceil(total / size);
   const start = (pageNum - 1) * size;
   const paginated = filtered.slice(start, start + size);

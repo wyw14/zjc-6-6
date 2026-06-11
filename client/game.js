@@ -29,6 +29,15 @@ const DIFFICULTY_LABELS = {
   hard: '困难'
 };
 
+function escapeHtml(str) {
+  if (typeof str !== 'string') {
+    str = String(str);
+  }
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 const gameBoard = document.getElementById('gameBoard');
 const timerEl = document.getElementById('timer');
 const movesEl = document.getElementById('moves');
@@ -333,17 +342,24 @@ async function loadLeaderboard() {
     totalCountEl.textContent = data.total;
   } catch (error) {
     console.error('获取排行榜失败:', error);
-    leaderboardList.innerHTML = '<li class="empty-message">加载排行榜失败</li>';
+    leaderboardList.innerHTML = '';
+    const errorLi = document.createElement('li');
+    errorLi.className = 'empty-message';
+    errorLi.textContent = '加载排行榜失败';
+    leaderboardList.appendChild(errorLi);
   }
 }
 
 function renderLeaderboard(leaderboard) {
+  leaderboardList.innerHTML = '';
+  
   if (!leaderboard || leaderboard.length === 0) {
-    leaderboardList.innerHTML = '<li class="empty-message">暂无记录，快来挑战吧！</li>';
+    const emptyLi = document.createElement('li');
+    emptyLi.className = 'empty-message';
+    emptyLi.textContent = '暂无记录，快来挑战吧！';
+    leaderboardList.appendChild(emptyLi);
     return;
   }
-
-  leaderboardList.innerHTML = '';
   
   const startRank = (leaderboardState.page - 1) * leaderboardState.pageSize;
   
@@ -361,18 +377,46 @@ function renderLeaderboard(leaderboard) {
     else if (rank === 2) rankClass = 'rank-silver';
     else if (rank === 3) rankClass = 'rank-bronze';
     
-    li.innerHTML = `
-      <div class="rank-main">
-        <span class="rank ${rankClass}">#${rank}</span>
-        <span class="name">${entry.playerName}</span>
-      </div>
-      <div class="rank-details">
-        <span class="difficulty-badge">${DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty}</span>
-        <span class="level-badge">第${entry.level}关</span>
-        <span class="time">⏱️ ${timeStr}</span>
-      </div>
-      <div class="rank-date">${entry.dateStr || ''}</div>
-    `;
+    const rankMain = document.createElement('div');
+    rankMain.className = 'rank-main';
+    
+    const rankSpan = document.createElement('span');
+    rankSpan.className = `rank ${rankClass}`;
+    rankSpan.textContent = `#${rank}`;
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'name';
+    nameSpan.textContent = entry.playerName || '匿名玩家';
+    
+    rankMain.appendChild(rankSpan);
+    rankMain.appendChild(nameSpan);
+    
+    const rankDetails = document.createElement('div');
+    rankDetails.className = 'rank-details';
+    
+    const difficultyBadge = document.createElement('span');
+    difficultyBadge.className = 'difficulty-badge';
+    difficultyBadge.textContent = DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
+    
+    const levelBadge = document.createElement('span');
+    levelBadge.className = 'level-badge';
+    levelBadge.textContent = `第${entry.level || 1}关`;
+    
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = `⏱️ ${timeStr}`;
+    
+    rankDetails.appendChild(difficultyBadge);
+    rankDetails.appendChild(levelBadge);
+    rankDetails.appendChild(timeSpan);
+    
+    const rankDate = document.createElement('div');
+    rankDate.className = 'rank-date';
+    rankDate.textContent = entry.dateStr || '';
+    
+    li.appendChild(rankMain);
+    li.appendChild(rankDetails);
+    li.appendChild(rankDate);
     
     leaderboardList.appendChild(li);
   });
