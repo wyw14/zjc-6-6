@@ -10,6 +10,27 @@
   <div class="container">
     <h1>🃏 翻牌配对小游戏</h1>
     
+    <div class="game-settings">
+      <div class="setting-item">
+        <label for="difficultySelect">难度：</label>
+        <select id="difficultySelect">
+          <option value="easy">简单</option>
+          <option value="medium" selected>中等</option>
+          <option value="hard">困难</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label for="levelSelect">关卡：</label>
+        <select id="levelSelect">
+          <option value="1">第1关</option>
+          <option value="2">第2关</option>
+          <option value="3">第3关</option>
+          <option value="4">第4关</option>
+          <option value="5">第5关</option>
+        </select>
+      </div>
+    </div>
+
     <div class="game-info">
       <div class="info-item">
         <span class="label">⏱️ 用时</span>
@@ -35,6 +56,8 @@
     <div id="winModal" class="modal hidden">
       <div class="modal-content">
         <h2>🎉 恭喜通关！</h2>
+        <p>难度：<span id="winDifficulty">中等</span></p>
+        <p>关卡：<span id="winLevel">第1关</span></p>
         <p>你的成绩：<span id="finalTime">00:00</span></p>
         <p>总步数：<span id="finalMoves">0</span></p>
         <div class="input-group">
@@ -43,13 +66,71 @@
         </div>
         <button id="submitScoreBtn" class="btn btn-primary">提交成绩</button>
         <button id="playAgainBtn" class="btn btn-secondary">再玩一次</button>
+        <button id="nextLevelBtn" class="btn btn-success">下一关</button>
       </div>
     </div>
 
     <div id="leaderboardModal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content leaderboard-modal">
         <h2>🏆 排行榜</h2>
+        
+        <div class="leaderboard-filters">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="filterDifficulty">难度：</label>
+              <select id="filterDifficulty">
+                <option value="all">全部</option>
+                <option value="easy">简单</option>
+                <option value="medium">中等</option>
+                <option value="hard">困难</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filterLevel">关卡：</label>
+              <select id="filterLevel">
+                <option value="all">全部</option>
+                <option value="1">第1关</option>
+                <option value="2">第2关</option>
+                <option value="3">第3关</option>
+                <option value="4">第4关</option>
+                <option value="5">第5关</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="searchInput">🔍 搜索玩家：</label>
+              <input type="text" id="searchInput" placeholder="输入玩家昵称">
+            </div>
+          </div>
+          
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="dateFrom">开始日期：</label>
+              <input type="date" id="dateFrom">
+            </div>
+            <div class="filter-item">
+              <label for="dateTo">结束日期：</label>
+              <input type="date" id="dateTo">
+            </div>
+          </div>
+          
+          <button id="refreshBtn" class="btn btn-primary btn-small">🔄 刷新</button>
+        </div>
+        
+        <div class="leaderboard-stats">
+          <span>共 <span id="totalCount">0</span> 条记录</span>
+        </div>
+        
         <ol id="leaderboardList" class="leaderboard-list"></ol>
+        
+        <div class="pagination" id="pagination">
+          <button id="prevPageBtn" class="btn btn-small" disabled>上一页</button>
+          <span class="page-info">第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</span>
+          <button id="nextPageBtn" class="btn btn-small" disabled>下一页</button>
+        </div>
+        
         <button id="closeLeaderboardBtn" class="btn btn-secondary">关闭</button>
       </div>
     </div>
